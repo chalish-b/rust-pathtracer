@@ -1,0 +1,98 @@
+use glam::{Vec2, Vec3};
+
+use crate::{
+    camera::Camera,
+    canvas::Canvas,
+    color::{self, Color},
+    hittable::HitRecord,
+    interval::Interval,
+    ray::Ray,
+    scene::Scene,
+};
+
+pub struct RenderOptions {
+    antialiasing: bool,
+    sample_count: i32,
+    thread_count: i32,
+    recursion_depth: i32,
+}
+
+impl RenderOptions {
+    pub fn new() -> Self {
+        Self {
+            antialiasing: true,
+            sample_count: 64,
+            thread_count: 1,
+            recursion_depth: 12,
+        }
+    }
+}
+
+const BOUNCE_EPSILON: f32 = 0.001;
+
+/// Returns `(top_left_pixel_center, du, dv)`.
+/// For rendering, we start with the top left center and keep adding du and dv for each pixel on canvas.
+fn calculate_render_params(camera: &Camera, canvas: &Canvas) -> (Vec3, Vec3, Vec3) {
+    let (right, up, forward) = camera.axes();
+    let Vec2 { x: vw, y: vh } = camera.viewport_size();
+    let cw = canvas.w as f32;
+    let ch = canvas.h as f32;
+
+    let viewport_u = right * vw;
+    let viewport_v = -up * vh;
+    let du = viewport_u / cw;
+    let dv = viewport_v / ch;
+
+    let viewport_center = camera.position + camera.viewport_distance * forward;
+    let viewport_top_left = viewport_center - (viewport_u + viewport_v) / 2.0;
+    let top_left_pixel_center = viewport_top_left + (du + dv) / 2.0;
+
+    (top_left_pixel_center, du, dv)
+}
+
+pub fn render(scene: &Scene, camera: &Camera, canvas: &mut Canvas, options: RenderOptions) {
+    let (top_left_pixel_center, du, dv) = calculate_render_params(camera, canvas);
+
+    for y in 0..canvas.h {
+        for x in 0..canvas.w {
+            let pixel_center = top_left_pixel_center + ((x as f32) * du) + ((y as f32) * dv);
+            let ray_dir = pixel_center - camera.position;
+            let ray = Ray {
+                origin: camera.position,
+                direction: ray_dir,
+            };
+            let pixel_color = shoot_ray(scene, ray, options.recursion_depth);
+            canvas.put_pixel(x, y, pixel_color);
+        }
+        let p = (y as f32) / (canvas.h as f32) * 100.0;
+        println!("Finished row {}/{} ({:.2}%)", y, canvas.h, p)
+    }
+}
+
+fn shoot_ray(scene: &Scene, ray: Ray, recursion_depth: i32) -> Color {
+    if recursion_depth <= 0 {
+        return color::BLACK;
+    }
+
+    let hit_record = hit(scene, ray, Interval(BOUNCE_EPSILON, f32::MAX));
+    if let Some(hit_rec) = hit_record {
+        return hit_rec.material.color();
+    }
+
+    color::BLACK
+}
+
+fn hit(scene: &Scene, ray: Ray, interval: Interval) -> Option<HitRecord> {
+    let mut closest_t = interval.1;
+    let mut closest_hit_record: Option<HitRecord> = None;
+
+    for hittable in scene.hittables.iter() {
+        let record = hittable.hit(ray, Interval(interval.0, closest_t));
+        if let Some(hit_rec) = record {
+            closest_t = hit_rec.t;
+            closest_hit_record = Some(hit_rec);
+        }
+    }
+
+    closest_hit_record
+}
