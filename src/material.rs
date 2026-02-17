@@ -2,11 +2,12 @@ use crate::{
     color::{self, Color},
     hittable::HitRecord,
     ray::Ray,
+    vec_rand::random_unit_vec,
 };
 
 pub struct ScatterResult {
-    out_ray: Ray,
-    attenuation: Color,
+    pub out_ray: Ray,
+    pub attenuation: Color,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -27,7 +28,21 @@ impl Material {
 
     pub fn scatter(&self, in_ray: Ray, hit_record: HitRecord) -> Option<ScatterResult> {
         match self {
-            Material::Lambertian { albedo } => None,
+            Material::Lambertian { albedo } => {
+                let scatter_dir = hit_record.normal + random_unit_vec();
+                // TODO: If vector is near zero, just scatter towards the normal
+                // todo
+
+                let ray_out = Ray {
+                    origin: hit_record.point,
+                    direction: scatter_dir,
+                };
+
+                Some(ScatterResult {
+                    out_ray: ray_out,
+                    attenuation: *albedo,
+                })
+            }
             Material::Metal { albedo, fuzz } => None,
         }
     }

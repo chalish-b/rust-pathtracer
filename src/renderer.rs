@@ -3,11 +3,12 @@ use glam::{Vec2, Vec3};
 use crate::{
     camera::Camera,
     canvas::Canvas,
-    color::{self, Color},
+    color::{self, BLUE, Color},
     hittable::HitRecord,
     interval::Interval,
     ray::Ray,
     scene::Scene,
+    vec_rand::random_in_square,
 };
 
 pub struct RenderOptions {
@@ -55,14 +56,31 @@ pub fn render(scene: &Scene, camera: &Camera, canvas: &mut Canvas, options: Rend
 
     for y in 0..canvas.h {
         for x in 0..canvas.w {
-            let pixel_center = top_left_pixel_center + ((x as f32) * du) + ((y as f32) * dv);
-            let ray_dir = pixel_center - camera.position;
-            let ray = Ray {
-                origin: camera.position,
-                direction: ray_dir,
-            };
-            let pixel_color = shoot_ray(scene, ray, options.recursion_depth);
-            canvas.put_pixel(x, y, pixel_color);
+            let mut pixel_color = color::BLACK;
+
+            for _ in 0..options.sample_count {
+                let offset = if options.antialiasing {
+                    random_in_square()
+                } else {
+                    Vec3::ZERO
+                };
+
+                let pixel_center = top_left_pixel_center
+                    + (((x as f32) + offset.x) * du)
+                    + (((y as f32) + offset.y) * dv);
+
+                let ray_dir = pixel_center - camera.position;
+                let ray = Ray {
+                    origin: camera.position,
+                    direction: ray_dir,
+                };
+
+                let ray_color = shoot_ray(scene, ray, options.recursion_depth);
+                pixel_color += ray_color;
+            }
+
+            let final_color = pixel_color * (1.0 / (options.sample_count as f32));
+            canvas.put_pixel(x, y, final_color);
         }
         let p = (y as f32) / (canvas.h as f32) * 100.0;
         println!("Finished row {}/{} ({:.2}%)", y, canvas.h, p)
@@ -74,15 +92,28 @@ fn shoot_ray(scene: &Scene, ray: Ray, recursion_depth: i32) -> Color {
         return color::BLACK;
     }
 
-    let hit_record = hit(scene, ray, Interval(BOUNCE_EPSILON, f32::MAX));
+    let hit_record = find_hit(scene, ray, Interval(BOUNCE_EPSILON, f32::MAX));
     if let Some(hit_rec) = hit_record {
-        return hit_rec.material.color();
+        if let Some(scatter_result) = hit_rec.material.scatter(ray, hit_rec) {
+            let ray_color = shoot_ray(scene, scatter_result.out_ray, recursion_depth - 1);
+            return scatter_result.attenuation * ray_color;
+        }
     }
 
-    color::BLACK
+    skybox_color(ray)
 }
 
-fn hit(scene: &Scene, ray: Ray, interval: Interval) -> Option<HitRecord> {
+fn skybox_color(ray: Ray) -> Color {
+    const BLUE_SKY: Color = Color::new(0.4, 0.58, 0.92);
+    const WHITE_HORIZON: Color = Color::new(0.95, 0.95, 0.98);
+
+    let norm = ray.direction.normalize();
+    let y = (norm.y + 1.0) / 2.0;
+
+    Color::mix(BLUE_SKY, WHITE_HORIZON, y)
+}
+
+fn find_hit(scene: &Scene, ray: Ray, interval: Interval) -> Option<HitRecord> {
     let mut closest_t = interval.1;
     let mut closest_hit_record: Option<HitRecord> = None;
 
