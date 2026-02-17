@@ -12,24 +12,24 @@ use crate::{
 };
 
 pub struct RenderOptions {
-    antialiasing: bool,
-    sample_count: i32,
-    thread_count: i32,
-    recursion_depth: i32,
+    pub antialiasing: bool,
+    pub sample_count: i32,
+    pub thread_count: i32,
+    pub recursion_depth: i32,
 }
 
 impl RenderOptions {
     pub fn new() -> Self {
         Self {
             antialiasing: true,
-            sample_count: 64,
+            sample_count: 32,
             thread_count: 1,
-            recursion_depth: 12,
+            recursion_depth: 16,
         }
     }
 }
 
-const BOUNCE_EPSILON: f32 = 0.001;
+const BOUNCE_EPSILON: f32 = 0.005;
 
 /// Returns `(top_left_pixel_center, du, dv)`.
 /// For rendering, we start with the top left center and keep adding du and dv for each pixel on canvas.
