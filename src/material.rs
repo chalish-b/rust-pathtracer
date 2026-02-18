@@ -1,3 +1,5 @@
+use glam::Vec3;
+
 use crate::{
     color::{self, Color},
     hittable::HitRecord,
@@ -43,7 +45,28 @@ impl Material {
                     attenuation: *albedo,
                 })
             }
-            Material::Metal { albedo, fuzz } => None,
+            Material::Metal { albedo, fuzz } => {
+                let reflected_ray = reflect(in_ray.direction, hit_record.normal);
+                let fuzzy_reflected = reflected_ray.normalize() + (fuzz * random_unit_vec());
+
+                // When adding a random fuzz, the ray can now go opposite to the normal as well
+                // We ignore those, treat them as absorbed rays
+                if Vec3::dot(hit_record.normal, fuzzy_reflected) < 0.0 {
+                    None
+                } else {
+                    Some(ScatterResult {
+                        out_ray: Ray {
+                            origin: hit_record.point,
+                            direction: fuzzy_reflected,
+                        },
+                        attenuation: *albedo,
+                    })
+                }
+            }
         }
     }
+}
+
+fn reflect(vec: Vec3, normal: Vec3) -> Vec3 {
+    vec + 2.0 * normal * Vec3::dot(normal, -vec)
 }

@@ -17,6 +17,18 @@ impl Color {
 
         self * t + other * (1.0 - t)
     }
+
+    pub fn to_gamma(self) -> Color {
+        fn gamma(c: f32) -> f32 {
+            if c > 0.0 { c.sqrt() } else { 0.0 }
+        }
+
+        Color {
+            r: gamma(self.r),
+            g: gamma(self.g),
+            b: gamma(self.b),
+        }
+    }
 }
 
 impl Mul<Color> for Color {

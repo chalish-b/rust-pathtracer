@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use glam::Vec3;
 
 use crate::{
@@ -26,11 +28,15 @@ const H: usize = 600;
 const ASPECT: f32 = (W as f32) / (H as f32);
 
 fn main() {
-    let mat1 = Material::Lambertian {
-        albedo: Color::new(0.89, 0.11, 0.14),
+    let lamb1 = Material::Lambertian {
+        albedo: Color::new(0.78, 0.17, 0.14),
     };
-    let mat2 = Material::Lambertian {
-        albedo: Color::new(0.18, 0.92, 0.14),
+    let lamb2 = Material::Lambertian {
+        albedo: Color::new(0.18, 0.82, 0.14),
+    };
+    let metal1 = Material::Metal {
+        albedo: Color::new(0.54, 0.50, 0.85),
+        fuzz: 0.1,
     };
 
     // Emissive material test. It kinda works (it illuminates nearby objects)
@@ -57,13 +63,21 @@ fn main() {
     });
 
     let mut scene = Scene::new();
-    scene.add_hittable(Sphere::new(Vec3::new(-1.0, 1.0, -5.0), 1.0).with_material(mat1));
-    scene.add_hittable(Sphere::new(Vec3::new(2.0, 2.0, -8.0), 2.0).with_material(mat2));
+    scene.add_hittable(Sphere::new(Vec3::new(2.0, 2.0, -8.0), 2.0).with_material(lamb2));
+    scene.add_hittable(Sphere::new(Vec3::new(-1.0, 2.0, -5.5), 0.8).with_material(lamb1));
+    scene.add_hittable(Sphere::new(Vec3::new(-1.0, 1.0, -5.0), 1.0).with_material(metal1));
     // scene.add_hittable(Sphere::new(Vec3::new(0.0, 2.0, -6.0), 0.5).with_material(mat3));
+
+    // Ground
     scene.add_hittable(Sphere::new(Vec3::new(0.0, -2000.0, -0.0), 2000.0));
 
-    let render_config = RenderOptions::new();
+    let mut render_config = RenderOptions::new();
+    render_config.sample_count = 32;
 
+    let now = Instant::now();
     renderer::render(&scene, &camera, &mut canvas, render_config);
+    let elapsed = now.elapsed();
+    println!("Elapsed: {:.2?}", elapsed);
+
     canvas.save_image("output.ppm").unwrap();
 }

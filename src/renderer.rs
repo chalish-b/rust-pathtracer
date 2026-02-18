@@ -22,7 +22,7 @@ impl RenderOptions {
     pub fn new() -> Self {
         Self {
             antialiasing: true,
-            sample_count: 32,
+            sample_count: 64,
             thread_count: 1,
             recursion_depth: 16,
         }
@@ -80,7 +80,8 @@ pub fn render(scene: &Scene, camera: &Camera, canvas: &mut Canvas, options: Rend
             }
 
             let final_color = pixel_color * (1.0 / (options.sample_count as f32));
-            canvas.put_pixel(x, y, final_color);
+            let gamma_corrected = final_color.to_gamma();
+            canvas.put_pixel(x, y, gamma_corrected);
         }
         let p = (y as f32) / (canvas.h as f32) * 100.0;
         println!("Finished row {}/{} ({:.2}%)", y, canvas.h, p)
@@ -98,6 +99,8 @@ fn shoot_ray(scene: &Scene, ray: Ray, recursion_depth: i32) -> Color {
             let ray_color = shoot_ray(scene, scatter_result.out_ray, recursion_depth - 1);
             return scatter_result.attenuation * ray_color;
         }
+
+        return color::BLACK;
     }
 
     skybox_color(ray)
