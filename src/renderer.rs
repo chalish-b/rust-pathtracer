@@ -1,9 +1,13 @@
 use glam::{Vec2, Vec3};
+use rayon::{
+    iter::{IndexedParallelIterator, ParallelIterator},
+    slice::ParallelSliceMut,
+};
 
 use crate::{
     camera::Camera,
     canvas::Canvas,
-    color::{self, BLUE, Color},
+    color::{self, Color},
     hittable::HitRecord,
     interval::Interval,
     ray::Ray,
@@ -14,7 +18,7 @@ use crate::{
 pub struct RenderOptions {
     pub antialiasing: bool,
     pub sample_count: i32,
-    pub thread_count: i32,
+    pub thread_count: usize,
     pub recursion_depth: i32,
 }
 
@@ -23,7 +27,7 @@ impl RenderOptions {
         Self {
             antialiasing: true,
             sample_count: 64,
-            thread_count: 1,
+            thread_count: 8,
             recursion_depth: 16,
         }
     }
@@ -54,38 +58,51 @@ fn calculate_render_params(camera: &Camera, canvas: &Canvas) -> (Vec3, Vec3, Vec
 pub fn render(scene: &Scene, camera: &Camera, canvas: &mut Canvas, options: RenderOptions) {
     let (top_left_pixel_center, du, dv) = calculate_render_params(camera, canvas);
 
-    for y in 0..canvas.h {
-        for x in 0..canvas.w {
-            let mut pixel_color = color::BLACK;
+    // Set the number of threads of the thread pool
+    // Calling build_global multiple times would give an error,
+    // but it doesn't really matter so we ignore it with .ok()
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(options.thread_count)
+        .build_global()
+        .ok();
 
-            for _ in 0..options.sample_count {
-                let offset = if options.antialiasing {
-                    random_in_square()
-                } else {
-                    Vec3::ZERO
-                };
+    canvas
+        .pixels
+        .par_chunks_mut(canvas.w)
+        .enumerate()
+        .for_each(|(y, row)| {
+            // The range based loop is more intuitive in this case imo
+            #[allow(clippy::needless_range_loop)]
+            for x in 0..canvas.w {
+                let mut pixel_color = color::BLACK;
 
-                let pixel_center = top_left_pixel_center
-                    + (((x as f32) + offset.x) * du)
-                    + (((y as f32) + offset.y) * dv);
+                for _ in 0..options.sample_count {
+                    let offset = if options.antialiasing {
+                        random_in_square()
+                    } else {
+                        Vec3::ZERO
+                    };
 
-                let ray_dir = pixel_center - camera.position;
-                let ray = Ray {
-                    origin: camera.position,
-                    direction: ray_dir,
-                };
+                    let pixel_center = top_left_pixel_center
+                        + (((x as f32) + offset.x) * du)
+                        + (((y as f32) + offset.y) * dv);
 
-                let ray_color = shoot_ray(scene, ray, options.recursion_depth);
-                pixel_color += ray_color;
+                    let ray_dir = pixel_center - camera.position;
+                    let ray = Ray {
+                        origin: camera.position,
+                        direction: ray_dir,
+                    };
+
+                    let ray_color = shoot_ray(scene, ray, options.recursion_depth);
+                    pixel_color += ray_color;
+                }
+
+                let final_color = pixel_color * (1.0 / (options.sample_count as f32));
+                let gamma_corrected = final_color.to_gamma();
+
+                row[x] = gamma_corrected;
             }
-
-            let final_color = pixel_color * (1.0 / (options.sample_count as f32));
-            let gamma_corrected = final_color.to_gamma();
-            canvas.put_pixel(x, y, gamma_corrected);
-        }
-        let p = (y as f32) / (canvas.h as f32) * 100.0;
-        println!("Finished row {}/{} ({:.2}%)", y, canvas.h, p)
-    }
+        });
 }
 
 fn shoot_ray(scene: &Scene, ray: Ray, recursion_depth: i32) -> Color {

@@ -6,7 +6,7 @@ use crate::color::{self, Color};
 pub struct Canvas {
     pub w: usize,
     pub h: usize,
-    pixels: Vec<Color>,
+    pub pixels: Vec<Color>,
 }
 
 impl Canvas {
@@ -17,6 +17,10 @@ impl Canvas {
             pixels: vec![color::BLACK; w * h],
         }
     }
+
+    // pub fn pixels(&mut self) -> &mut Vec<Color> {
+    //     &mut self.pixels
+    // }
 
     /// Convert from x and y values (range [0, W-1] and [0, H-1]) to a linear array index
     fn to_array_coords(&self, x: usize, y: usize) -> usize {
