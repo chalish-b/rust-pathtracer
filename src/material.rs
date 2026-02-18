@@ -1,11 +1,6 @@
 use glam::Vec3;
 
-use crate::{
-    color::{self, Color},
-    hittable::HitRecord,
-    ray::Ray,
-    vec_rand::random_unit_vec,
-};
+use crate::{color::Color, hittable::HitRecord, ray::Ray, vec_rand::random_unit_vec};
 
 pub struct ScatterResult {
     pub out_ray: Ray,
@@ -21,12 +16,12 @@ pub enum Material {
 
 impl Material {
     // Just a test function to get the raw color before we implement any lighting
-    pub fn color(&self) -> Color {
-        match self {
-            Material::Lambertian { albedo } => *albedo,
-            Material::Metal { albedo, fuzz } => *albedo,
-        }
-    }
+    // pub fn color(&self) -> Color {
+    //     match self {
+    //         Material::Lambertian { albedo } => *albedo,
+    //         Material::Metal { albedo, fuzz } => *albedo,
+    //     }
+    // }
 
     pub fn scatter(&self, in_ray: Ray, hit_record: HitRecord) -> Option<ScatterResult> {
         match self {

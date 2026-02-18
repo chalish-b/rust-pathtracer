@@ -3,13 +3,8 @@ use std::time::Instant;
 use glam::Vec3;
 
 use crate::{
-    camera::Camera,
-    canvas::Canvas,
-    color::Color,
-    hittable::Sphere,
-    material::Material,
-    renderer::{RenderOptions, render},
-    scene::Scene,
+    camera::Camera, canvas::Canvas, color::Color, hittable::Sphere, material::Material,
+    renderer::RenderOptions, scene::Scene,
 };
 
 mod camera;
@@ -72,12 +67,13 @@ fn main() {
     scene.add_hittable(Sphere::new(Vec3::new(0.0, -2000.0, -0.0), 2000.0));
 
     let mut render_config = RenderOptions::new();
-    render_config.sample_count = 32;
+    render_config.sample_count = 64;
+    render_config.thread_count = 12;
 
     let now = Instant::now();
     renderer::render(&scene, &camera, &mut canvas, render_config);
     let elapsed = now.elapsed();
-    println!("Elapsed: {:.2?}", elapsed);
+    println!("Elapsed: {elapsed:.2?}");
 
     canvas.save_image("output.ppm").unwrap();
 }

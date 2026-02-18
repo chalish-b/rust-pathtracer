@@ -1,3 +1,7 @@
+// This isn't great because it disables it for the whole file,
+// but unused variable warnings for the colors (defined at the bottom) is annoying
+#![allow(dead_code)]
+
 use std::ops::{Add, AddAssign, Mul};
 
 #[derive(Clone, Copy, Debug)]

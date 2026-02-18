@@ -6,7 +6,7 @@ pub struct HitRecord {
     pub normal: Vec3,
     pub point: Vec3,
     pub t: f32,
-    pub is_front_face: bool,
+    pub is_front_face: bool, // Will be used for transparent materials
     pub material: Material,
 }
 
