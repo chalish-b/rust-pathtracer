@@ -64,6 +64,7 @@ fn main() {
 
     let mut camera = Camera::new();
     camera.aspect = (W as f32) / (H as f32);
+    camera.v_fov = 65.0;
     camera.position = Vec3::new(0.0, 0.0, 0.0);
     camera.look_at(Vec3::new(0.0, 1.0, -7.0));
 

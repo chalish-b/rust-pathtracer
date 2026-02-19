@@ -40,7 +40,8 @@ fn calculate_render_params(camera: &Camera, canvas: &Canvas) -> (Vec3, Vec3, Vec
     let du = viewport_u / cw;
     let dv = viewport_v / ch;
 
-    let viewport_center = camera.position + camera.viewport_distance * forward;
+    // Assuming viewport distance is 1 here, we don't need to multiply forward vec by distance
+    let viewport_center = camera.position + forward;
     let viewport_top_left = viewport_center - (viewport_u + viewport_v) / 2.0;
     let top_left_pixel_center = viewport_top_left + (du + dv) / 2.0;
 
