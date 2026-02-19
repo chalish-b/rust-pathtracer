@@ -1,4 +1,4 @@
-use crate::{color, interval::Interval, material::Material, ray::Ray};
+use crate::{color::Color, interval::Interval, material::Material, ray::Ray};
 use glam::Vec3;
 
 #[derive(Debug, Copy, Clone)]
@@ -23,7 +23,7 @@ pub struct Sphere {
 }
 
 const DEFAULT_MAT: Material = Material::Lambertian {
-    albedo: color::WHITE,
+    albedo: Color::WHITE,
 };
 
 impl Sphere {
@@ -46,7 +46,7 @@ impl Hit for Sphere {
         let oc = self.center - ray.origin;
         let a = Vec3::dot(ray.direction, ray.direction);
         let b = -2.0 * Vec3::dot(oc, ray.direction);
-        let c = Vec3::dot(oc, oc) - self.radius.powf(2.0);
+        let c = Vec3::dot(oc, oc) - self.radius.powi(2);
 
         let delta = b * b - 4.0 * a * c;
         if delta < 0.0 {
@@ -62,7 +62,7 @@ impl Hit for Sphere {
             if !interval.contains(t) {
                 return None;
             }
-        };
+        }
 
         let point = ray.at(t);
         let mut normal = (point - self.center) / self.radius;
@@ -71,7 +71,7 @@ impl Hit for Sphere {
         if Vec3::dot(ray.direction, normal) > 0.0 {
             is_front_face = false;
             normal = -normal;
-        };
+        }
 
         Some(HitRecord {
             t,

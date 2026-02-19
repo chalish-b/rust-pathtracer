@@ -1,6 +1,9 @@
-use std::sync::{
-    Arc,
-    atomic::{AtomicUsize, Ordering},
+use std::{
+    f32,
+    sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    },
 };
 
 use glam::{Vec2, Vec3};
@@ -10,16 +13,11 @@ use rayon::{
 };
 
 use crate::{
-    camera::Camera,
-    canvas::Canvas,
-    color::{self, Color},
-    hittable::HitRecord,
-    interval::Interval,
-    ray::Ray,
-    scene::Scene,
-    vec_rand::random_in_square,
+    camera::Camera, canvas::Canvas, color::Color, hittable::HitRecord, interval::Interval,
+    ray::Ray, scene::Scene, vec_rand::random_in_square,
 };
 
+#[derive(Debug, Copy, Clone)]
 pub struct RenderOptions {
     pub antialiasing: bool,
     pub sample_count: i32,
@@ -72,7 +70,7 @@ pub fn render(scene: &Scene, camera: &Camera, canvas: &mut Canvas, options: Rend
             // The range based loop is more intuitive in this case imo
             #[allow(clippy::needless_range_loop)]
             for x in 0..canvas.w {
-                let mut pixel_color = color::BLACK;
+                let mut pixel_color = Color::BLACK;
 
                 for _ in 0..options.sample_count {
                     let offset = if options.antialiasing {
@@ -114,17 +112,17 @@ pub fn render(scene: &Scene, camera: &Camera, canvas: &mut Canvas, options: Rend
 
 fn shoot_ray(scene: &Scene, ray: Ray, recursion_depth: i32) -> Color {
     if recursion_depth <= 0 {
-        return color::BLACK;
+        return Color::BLACK;
     }
 
-    let hit_record = find_hit(scene, ray, Interval(BOUNCE_EPSILON, f32::MAX));
+    let hit_record = find_hit(scene, ray, Interval(BOUNCE_EPSILON, f32::INFINITY));
     if let Some(hit_rec) = hit_record {
         if let Some(scatter_result) = hit_rec.material.scatter(ray, hit_rec) {
             let ray_color = shoot_ray(scene, scatter_result.out_ray, recursion_depth - 1);
             return scatter_result.attenuation * ray_color;
         }
 
-        return color::BLACK;
+        return Color::BLACK;
     }
 
     skybox_color(ray)

@@ -1,10 +1,3 @@
-use crate::{
-    camera::Camera, canvas::Canvas, color::Color, hittable::Sphere, material::Material,
-    renderer::RenderOptions, scene::Scene,
-};
-use glam::Vec3;
-use std::time::Instant;
-
 mod camera;
 mod canvas;
 mod color;
@@ -15,6 +8,13 @@ mod ray;
 mod renderer;
 mod scene;
 mod vec_rand;
+
+use crate::{
+    camera::Camera, canvas::Canvas, color::Color, hittable::Sphere, material::Material,
+    renderer::RenderOptions, scene::Scene,
+};
+use glam::Vec3;
+use std::time::Instant;
 
 // Change these to tweak the render settings
 const W: usize = 800;

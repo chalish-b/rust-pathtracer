@@ -1,7 +1,3 @@
-// This isn't great because it disables it for the whole file,
-// but unused variable warnings for the colors (defined at the bottom) is annoying
-#![allow(dead_code)]
-
 use std::ops::{Add, AddAssign, Mul};
 
 #[derive(Clone, Copy, Debug)]
@@ -12,6 +8,14 @@ pub struct Color {
 }
 
 impl Color {
+    pub const BLACK: Color = Color::new(0.0, 0.0, 0.0);
+    pub const WHITE: Color = Color::new(1.0, 1.0, 1.0);
+    pub const RED: Color = Color::new(1.0, 0.0, 0.0);
+    pub const GREEN: Color = Color::new(0.0, 1.0, 0.0);
+    pub const BLUE: Color = Color::new(0.0, 0.0, 1.0);
+    pub const YELLOW: Color = Color::new(1.0, 1.0, 0.0);
+    pub const CYAN: Color = Color::new(0.0, 1.0, 1.0);
+    pub const MAGENTA: Color = Color::new(1.0, 0.0, 1.0);
     pub const fn new(r: f32, g: f32, b: f32) -> Self {
         Color { r, g, b }
     }
@@ -82,12 +86,3 @@ impl AddAssign<Color> for Color {
         self.b += rhs.b;
     }
 }
-
-pub const BLACK: Color = Color::new(0.0, 0.0, 0.0);
-pub const WHITE: Color = Color::new(1.0, 1.0, 1.0);
-pub const RED: Color = Color::new(1.0, 0.0, 0.0);
-pub const GREEN: Color = Color::new(0.0, 1.0, 0.0);
-pub const BLUE: Color = Color::new(0.0, 0.0, 1.0);
-pub const YELLOW: Color = Color::new(1.0, 1.0, 0.0);
-pub const CYAN: Color = Color::new(0.0, 1.0, 1.0);
-pub const MAGENTA: Color = Color::new(1.0, 0.0, 1.0);

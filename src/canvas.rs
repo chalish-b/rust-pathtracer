@@ -1,7 +1,7 @@
 use std::io::{self, BufWriter, Write};
 use std::{fs::File, path::Path};
 
-use crate::color::{self, Color};
+use crate::color::Color;
 
 pub struct Canvas {
     pub w: usize,
@@ -14,7 +14,7 @@ impl Canvas {
         Canvas {
             w,
             h,
-            pixels: vec![color::BLACK; w * h],
+            pixels: vec![Color::BLACK; w * h],
         }
     }
 

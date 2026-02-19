@@ -72,7 +72,7 @@ impl Material {
 
                 let normalized_in = in_ray.direction.normalize();
                 let cos_theta = Vec3::dot(-normalized_in, hit_record.normal);
-                let sin_theta = f32::sqrt(1.0 - cos_theta * cos_theta);
+                let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
 
                 let is_total_internal_reflection = ri * sin_theta > 1.0;
 
@@ -99,9 +99,9 @@ impl Material {
 }
 
 fn reflectance(cos: f32, refractive_index: f32) -> f32 {
-    let r0 = ((1.0 - refractive_index) / (1.0 + refractive_index)).powf(2.0);
+    let r0 = ((1.0 - refractive_index) / (1.0 + refractive_index)).powi(2);
 
-    r0 + (1.0 - r0) * (1.0 - cos).powf(5.0)
+    r0 + (1.0 - r0) * (1.0 - cos).powi(5)
 }
 
 fn reflect(vec: Vec3, normal: Vec3) -> Vec3 {
@@ -114,7 +114,7 @@ fn refract(vec: Vec3, normal: Vec3, etai_over_etat: f32) -> Vec3 {
     let cos_theta = Vec3::dot(-normalized_in, normal);
     let perpendicular = etai_over_etat * (normalized_in + normal * cos_theta);
     // -sqrt(abs(1 - |p|^2)) * normal
-    let parallel = -f32::sqrt(f32::abs(1.0 - perpendicular.length_squared())) * normal;
+    let parallel = -((1.0 - perpendicular.length_squared()).abs().sqrt()) * normal;
 
     parallel + perpendicular
 }
