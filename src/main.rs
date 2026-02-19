@@ -33,6 +33,14 @@ fn main() {
         albedo: Color::new(0.54, 0.50, 0.85),
         fuzz: 0.1,
     };
+    let metal2 = Material::Metal {
+        albedo: Color::new(0.95, 0.95, 0.95),
+        fuzz: 0.0,
+    };
+    let glass1 = Material::Glass {
+        albedo: Color::new(1.0, 1.0, 1.0),
+        refraction_index: 1.025,
+    };
 
     // Emissive material test. It kinda works (it illuminates nearby objects)
     // but it also gets colored by nearby objects. I guess the solution is that once a ray hits
@@ -48,7 +56,7 @@ fn main() {
     let mut camera = Camera::new().with_aspect(ASPECT);
     camera.position = Vec3 {
         x: 0.0,
-        y: 1.5,
+        y: 1.0,
         z: 0.0,
     };
     camera.look_at(Vec3 {
@@ -61,6 +69,8 @@ fn main() {
     scene.add_hittable(Sphere::new(Vec3::new(2.0, 2.0, -8.0), 2.0).with_material(lamb2));
     scene.add_hittable(Sphere::new(Vec3::new(-1.0, 2.0, -5.5), 0.8).with_material(lamb1));
     scene.add_hittable(Sphere::new(Vec3::new(-1.0, 1.0, -5.0), 1.0).with_material(metal1));
+    scene.add_hittable(Sphere::new(Vec3::new(0.0, 0.3, -4.0), 0.3).with_material(metal2));
+    scene.add_hittable(Sphere::new(Vec3::new(0.0, 1.5, -3.0), 0.4).with_material(glass1));
     // scene.add_hittable(Sphere::new(Vec3::new(0.0, 2.0, -6.0), 0.5).with_material(mat3));
 
     // Ground
