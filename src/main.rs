@@ -1,11 +1,9 @@
-use std::time::Instant;
-
-use glam::Vec3;
-
 use crate::{
     camera::Camera, canvas::Canvas, color::Color, hittable::Sphere, material::Material,
     renderer::RenderOptions, scene::Scene,
 };
+use glam::Vec3;
+use std::time::Instant;
 
 mod camera;
 mod canvas;
@@ -18,67 +16,77 @@ mod renderer;
 mod scene;
 mod vec_rand;
 
+// Change these to tweak the render settings
 const W: usize = 800;
 const H: usize = 600;
-const ASPECT: f32 = (W as f32) / (H as f32);
+const SAMPLE_COUNT: i32 = 32;
+const RECURSION_DEPTH: i32 = 12;
+const THREAD_COUNT: usize = 12;
 
 fn main() {
-    let lamb1 = Material::Lambertian {
-        albedo: Color::new(0.78, 0.17, 0.14),
+    let red_diffuse = Material::Lambertian {
+        albedo: Color::new(0.98, 0.10, 0.12),
     };
-    let lamb2 = Material::Lambertian {
-        albedo: Color::new(0.18, 0.82, 0.14),
+    let green_diffuse = Material::Lambertian {
+        albedo: Color::new(0.32, 0.94, 0.30),
     };
-    let metal1 = Material::Metal {
-        albedo: Color::new(0.54, 0.50, 0.85),
+    let yellow_diffuse = Material::Lambertian {
+        albedo: Color::new(0.92, 0.94, 0.21),
+    };
+    let white_diffuse = Material::Lambertian {
+        albedo: Color::new(0.98, 0.92, 0.88),
+    };
+    let black_diffuse = Material::Lambertian {
+        albedo: Color::new(0.07, 0.07, 0.07),
+    };
+    let blue_metal = Material::Metal {
+        albedo: Color::new(0.12, 0.10, 0.92),
         fuzz: 0.1,
     };
-    let metal2 = Material::Metal {
-        albedo: Color::new(0.95, 0.95, 0.95),
-        fuzz: 0.0,
+    let white_metal = Material::Metal {
+        albedo: Color::new(0.9, 0.9, 0.9),
+        fuzz: 0.01,
     };
-    let glass1 = Material::Glass {
+    let white_glass = Material::Glass {
         albedo: Color::new(1.0, 1.0, 1.0),
         refraction_index: 1.025,
     };
-
-    // Emissive material test. It kinda works (it illuminates nearby objects)
-    // but it also gets colored by nearby objects. I guess the solution is that once a ray hits
-    // an emissive material, it can't bounce any further. Idk if there is anything else to consider.
-    //  That should be an easy fix if we create a separate emissive material type.
-    // let mat3 = Material::Lambertian {
-    //     albedo: Color::new(2.5, 2.5, 2.5),
-    // };
+    let white_glass2 = Material::Glass {
+        albedo: Color::new(1.0, 1.0, 1.0),
+        refraction_index: 1.01,
+    };
+    let air_glass = Material::Glass {
+        albedo: Color::new(1.0, 1.0, 1.0),
+        refraction_index: 1.0 / 1.025,
+    };
 
     let mut canvas = Canvas::new(W, H);
 
-    // Camera set up
-    let mut camera = Camera::new().with_aspect(ASPECT);
-    camera.position = Vec3 {
-        x: 0.0,
-        y: 1.0,
-        z: 0.0,
-    };
-    camera.look_at(Vec3 {
-        x: 0.0,
-        y: 0.0,
-        z: -30.0,
-    });
+    let mut camera = Camera::new();
+    camera.aspect = (W as f32) / (H as f32);
+    camera.position = Vec3::new(0.0, 0.0, 0.0);
+    camera.look_at(Vec3::new(0.0, 1.0, -7.0));
 
     let mut scene = Scene::new();
-    scene.add_hittable(Sphere::new(Vec3::new(2.0, 2.0, -8.0), 2.0).with_material(lamb2));
-    scene.add_hittable(Sphere::new(Vec3::new(-1.0, 2.0, -5.5), 0.8).with_material(lamb1));
-    scene.add_hittable(Sphere::new(Vec3::new(-1.0, 1.0, -5.0), 1.0).with_material(metal1));
-    scene.add_hittable(Sphere::new(Vec3::new(0.0, 0.3, -4.0), 0.3).with_material(metal2));
-    scene.add_hittable(Sphere::new(Vec3::new(0.0, 1.5, -3.0), 0.4).with_material(glass1));
-    // scene.add_hittable(Sphere::new(Vec3::new(0.0, 2.0, -6.0), 0.5).with_material(mat3));
+    scene.add_hittable(Sphere::new(Vec3::new(0.0, 0.0, -7.0), 1.0).with_material(red_diffuse));
+    scene.add_hittable(Sphere::new(Vec3::new(1.6, -0.4, -6.5), 0.6).with_material(yellow_diffuse));
+    scene.add_hittable(Sphere::new(Vec3::new(1.2, 2.0, -2.0), 1.2).with_material(green_diffuse));
+    scene.add_hittable(Sphere::new(Vec3::new(-2.0, 5.0, -15.0), 2.0).with_material(black_diffuse));
+    scene.add_hittable(Sphere::new(Vec3::new(-3.0, 0.98, -10.0), 2.0).with_material(blue_metal));
+    scene.add_hittable(Sphere::new(Vec3::new(-0.3, 0.4, -3.2), 0.5).with_material(white_glass));
+    scene.add_hittable(Sphere::new(Vec3::new(0.45, 0.5, -3.8), 0.35).with_material(white_glass2));
+    scene.add_hittable(Sphere::new(Vec3::new(-0.3, 0.4, -3.2), 0.45).with_material(air_glass));
+    scene.add_hittable(Sphere::new(Vec3::new(4.0, 1.95, -12.0), 3.0).with_material(white_metal));
+    scene.add_hittable(
+        Sphere::new(Vec3::new(0.0, -501.0, -7.0), 500.0).with_material(white_diffuse),
+    );
 
-    // Ground
-    scene.add_hittable(Sphere::new(Vec3::new(0.0, -2000.0, -0.0), 2000.0));
-
-    let mut render_config = RenderOptions::new();
-    render_config.sample_count = 64;
-    render_config.thread_count = 12;
+    let render_config = RenderOptions {
+        antialiasing: true,
+        recursion_depth: RECURSION_DEPTH,
+        sample_count: SAMPLE_COUNT,
+        thread_count: THREAD_COUNT,
+    };
 
     let now = Instant::now();
     renderer::render(&scene, &camera, &mut canvas, render_config);

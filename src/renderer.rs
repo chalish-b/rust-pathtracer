@@ -1,3 +1,8 @@
+use std::sync::{
+    Arc,
+    atomic::{AtomicUsize, Ordering},
+};
+
 use glam::{Vec2, Vec3};
 use rayon::{
     iter::{IndexedParallelIterator, ParallelIterator},
@@ -20,17 +25,6 @@ pub struct RenderOptions {
     pub sample_count: i32,
     pub thread_count: usize,
     pub recursion_depth: i32,
-}
-
-impl RenderOptions {
-    pub fn new() -> Self {
-        Self {
-            antialiasing: true,
-            sample_count: 64,
-            thread_count: 8,
-            recursion_depth: 16,
-        }
-    }
 }
 
 const BOUNCE_EPSILON: f32 = 0.005;
@@ -65,6 +59,10 @@ pub fn render(scene: &Scene, camera: &Camera, canvas: &mut Canvas, options: Rend
         .num_threads(options.thread_count)
         .build_global()
         .ok();
+
+    // Shared progress counter so threads can update it
+    let total_rows = canvas.h;
+    let rows_done = Arc::new(AtomicUsize::new(0));
 
     canvas
         .pixels
@@ -101,6 +99,15 @@ pub fn render(scene: &Scene, camera: &Camera, canvas: &mut Canvas, options: Rend
                 let gamma_corrected = final_color.to_gamma();
 
                 row[x] = gamma_corrected;
+            }
+
+            // Update counter
+            // Only on integer changes so we don't spam the output
+            let prev_done = rows_done.fetch_add(1, Ordering::Relaxed);
+            let prev_p = (prev_done * 100) / total_rows;
+            let current_p = (prev_done + 1) * 100 / total_rows;
+            if prev_p != current_p {
+                println!("{current_p}%");
             }
         });
 }

@@ -18,17 +18,6 @@ impl Canvas {
         }
     }
 
-    // Convert from x and y values (range [0, W-1] and [0, H-1]) to a linear array index
-    // fn to_array_coords(&self, x: usize, y: usize) -> usize {
-    //     self.w * y + x
-    // }
-
-    // These methods are useless now because we're directly setting values of the `pixels` vector
-    // pub fn put_pixel(&mut self, x: usize, y: usize, color: Color) {
-    //     let coords = self.to_array_coords(x, y);
-    //     self.pixels[coords] = color;
-    // }
-
     pub fn save_image(&self, filename: impl AsRef<Path>) -> Result<(), io::Error> {
         let file = File::create(filename)?;
         let mut writer = BufWriter::new(file);

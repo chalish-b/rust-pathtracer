@@ -24,20 +24,11 @@ pub enum Material {
 }
 
 impl Material {
-    // Just a test function to get the raw color before we implement any lighting
-    // pub fn color(&self) -> Color {
-    //     match self {
-    //         Material::Lambertian { albedo } => *albedo,
-    //         Material::Metal { albedo, fuzz } => *albedo,
-    //     }
-    // }
-
     pub fn scatter(&self, in_ray: Ray, hit_record: HitRecord) -> Option<ScatterResult> {
         match self {
             Material::Lambertian { albedo } => {
                 let scatter_dir = hit_record.normal + random_unit_vec();
                 // TODO: If vector is near zero, just scatter towards the normal
-                // todo
 
                 let ray_out = Ray {
                     origin: hit_record.point,
