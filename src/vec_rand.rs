@@ -30,3 +30,18 @@ pub fn random_in_square() -> Vec3 {
         z: 0.0,
     }
 }
+
+pub fn random_in_disk(r: f32) -> Vec3 {
+    let mut rng = rand::rng();
+    loop {
+        let vec = Vec3 {
+            x: rng.random_range(-r..=r),
+            y: rng.random_range(-r..=r),
+            z: 0.0,
+        };
+        let len_squared = vec.length_squared();
+        if len_squared < 1.0 {
+            return vec;
+        }
+    }
+}

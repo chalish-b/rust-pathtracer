@@ -19,7 +19,7 @@ use std::time::Instant;
 // Change these to tweak the render settings
 const W: usize = 800;
 const H: usize = 600;
-const SAMPLE_COUNT: i32 = 32;
+const SAMPLE_COUNT: i32 = 64;
 const RECURSION_DEPTH: i32 = 12;
 const THREAD_COUNT: usize = 12;
 
@@ -64,7 +64,7 @@ fn main() {
 
     let mut camera = Camera::new();
     camera.aspect = (W as f32) / (H as f32);
-    camera.v_fov = 65.0;
+    camera.v_fov_deg = 65.0;
     camera.position = Vec3::new(0.0, 0.0, 0.0);
     camera.look_at(Vec3::new(0.0, 1.0, -7.0));
 

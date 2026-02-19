@@ -13,8 +13,14 @@ use rayon::{
 };
 
 use crate::{
-    camera::Camera, canvas::Canvas, color::Color, hittable::HitRecord, interval::Interval,
-    ray::Ray, scene::Scene, vec_rand::random_in_square,
+    camera::Camera,
+    canvas::Canvas,
+    color::Color,
+    hittable::HitRecord,
+    interval::Interval,
+    ray::Ray,
+    scene::Scene,
+    vec_rand::{random_in_disk, random_in_square},
 };
 
 #[derive(Debug, Copy, Clone)]
@@ -27,9 +33,17 @@ pub struct RenderOptions {
 
 const BOUNCE_EPSILON: f32 = 0.005;
 
-/// Returns `(top_left_pixel_center, du, dv)`.
+#[derive(Debug, Copy, Clone)]
+struct ViewportParams {
+    pub top_left_px_center: Vec3,
+    pub du: Vec3,
+    pub dv: Vec3,
+    pub defocus_du: Vec3,
+    pub defocus_dv: Vec3,
+}
+
 /// For rendering, we start with the top left center and keep adding du and dv for each pixel on canvas.
-fn calculate_render_params(camera: &Camera, canvas: &Canvas) -> (Vec3, Vec3, Vec3) {
+fn calculate_viewport_params(camera: &Camera, canvas: &Canvas) -> ViewportParams {
     let (right, up, forward) = camera.axes();
     let Vec2 { x: vw, y: vh } = camera.viewport_size();
     let cw = canvas.w as f32;
@@ -40,16 +54,32 @@ fn calculate_render_params(camera: &Camera, canvas: &Canvas) -> (Vec3, Vec3, Vec
     let du = viewport_u / cw;
     let dv = viewport_v / ch;
 
-    // Assuming viewport distance is 1 here, we don't need to multiply forward vec by distance
-    let viewport_center = camera.position + forward;
-    let viewport_top_left = viewport_center - (viewport_u + viewport_v) / 2.0;
-    let top_left_pixel_center = viewport_top_left + (du + dv) / 2.0;
+    let defocus_r = camera.focus_distance * (camera.defocus_angle / 2.0).to_radians().tan();
+    let defocus_du = right * defocus_r;
+    let defocus_dv = up * defocus_r;
 
-    (top_left_pixel_center, du, dv)
+    // Here, we're actually using viewport distance to be focus distance, because that's basically where we wanna shoot the rays at
+    let viewport_center = camera.position + camera.focus_distance * forward;
+    let viewport_top_left = viewport_center - (viewport_u + viewport_v) / 2.0;
+    let top_left_px_center = viewport_top_left + (du + dv) / 2.0;
+
+    ViewportParams {
+        top_left_px_center,
+        du,
+        dv,
+        defocus_du,
+        defocus_dv,
+    }
 }
 
 pub fn render(scene: &Scene, camera: &Camera, canvas: &mut Canvas, options: RenderOptions) {
-    let (top_left_pixel_center, du, dv) = calculate_render_params(camera, canvas);
+    let ViewportParams {
+        top_left_px_center,
+        du,
+        dv,
+        defocus_du,
+        defocus_dv,
+    } = calculate_viewport_params(camera, canvas);
 
     // Set the number of threads of the thread pool
     // Calling build_global multiple times would give an error,
@@ -80,13 +110,20 @@ pub fn render(scene: &Scene, camera: &Camera, canvas: &mut Canvas, options: Rend
                         Vec3::ZERO
                     };
 
-                    let pixel_center = top_left_pixel_center
+                    let pixel_center = top_left_px_center
                         + (((x as f32) + offset.x) * du)
                         + (((y as f32) + offset.y) * dv);
 
-                    let ray_dir = pixel_center - camera.position;
+                    let ray_origin_offset = if camera.defocus_angle <= 0.0 {
+                        Vec3::ZERO
+                    } else {
+                        let random = random_in_disk(1.0);
+                        random.x * defocus_du + random.y * defocus_dv
+                    };
+                    let ray_origin = camera.position + ray_origin_offset;
+                    let ray_dir = pixel_center - ray_origin;
                     let ray = Ray {
-                        origin: camera.position,
+                        origin: ray_origin,
                         direction: ray_dir,
                     };
 

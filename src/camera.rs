@@ -3,8 +3,11 @@ use glam::{Vec2, Vec3};
 pub struct Camera {
     pub position: Vec3,
     pub forward: Vec3,
-    pub v_fov: f32, // In degrees
+    pub v_fov_deg: f32, // In degrees
     pub aspect: f32,
+
+    pub focus_distance: f32,
+    pub defocus_angle: f32,
 }
 
 impl Camera {
@@ -12,18 +15,22 @@ impl Camera {
         Camera {
             position: Vec3::ZERO,
             forward: -Vec3::Z,
-            v_fov: 60.0,
+            v_fov_deg: 60.0,
             aspect: 1.0,
+            focus_distance: 6.0,
+            defocus_angle: 0.5,
         }
     }
 
     pub fn viewport_size(&self) -> Vec2 {
-        let fov_rad = self.v_fov.to_radians();
-        // The viewport distance doesn't matter, it's just an arbitrary choice.
+        let fov_rad = self.v_fov_deg.to_radians();
+        // The viewport distance doesn't matter, it's just an arbitrary choice to calculate
+        // the ray direction, which will be the same regardless of distance.
         // The FOV and the Aspect is the real way to calculate the viewport size
-        // So we just pick the distance as 1 to simplify things.
+        // But to make things easier with defocus blur, we make it the same as the focus plane,
+        // which actually needs a specific point and a distance instead of just direction
         // height = 2 * viewport_dist * tan(v_fov / 2)
-        let viewport_height = 2.0 * f32::tan(fov_rad / 2.0);
+        let viewport_height = 2.0 * self.focus_distance * f32::tan(fov_rad / 2.0);
         let viewport_width = viewport_height * self.aspect;
 
         Vec2 {
