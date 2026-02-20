@@ -18,7 +18,7 @@ impl Camera {
             v_fov_deg: 60.0,
             aspect: 1.0,
             focus_distance: 6.0,
-            defocus_angle: 0.5,
+            defocus_angle: 1.5,
         }
     }
 
@@ -43,8 +43,11 @@ impl Camera {
     pub fn axes(&self) -> (Vec3, Vec3, Vec3) {
         let world_up = Vec3::Y;
         let forward = self.forward.normalize();
-        // TODO: If camera is looking straight up or down, cross product will be zero. Just make `right = Vec3::X` in this case
-        let right = forward.cross(world_up).normalize();
+
+        // If camera is looking straight up or down, cross product will be zero.
+        // In this case, normalization will fail, so we can  fallback to using `Vec3::X`.
+        let right = forward.cross(world_up).try_normalize().unwrap_or(Vec3::X);
+
         let up = right.cross(forward); // No need to normalize this because right and forward are already normalized.
 
         (right, up, forward)

@@ -8,6 +8,14 @@ glam = "0.32.0"
 rand = "0.10.0"
 rayon = "1.11.0"
 
-# Good for profiling, don't enable for final build because of file size
-# [profile.release]
-# debug = true
+[profile.dev]
+# Huge difference between opt-level 0 and 1 (15 second vs 2 seconds)
+# Nice for development, disable if debugging becomes hard
+opt-level = 1
+
+[profile.release]
+
+# Opt level 2 seems to be consistently more performant than 3
+# opt-level 1 and 2: ~1.8-1.9 seconds
+# opt-level 3: ~2.4-2.5 seconds
+opt-level = 2
