@@ -117,7 +117,7 @@ pub fn render(scene: &Scene, camera: &Camera, canvas: &mut Canvas, options: Rend
                     let ray_origin_offset = if camera.defocus_angle <= 0.0 {
                         Vec3::ZERO
                     } else {
-                        let random = random_in_disk(1.0);
+                        let random = random_in_disk();
                         random.x * defocus_du + random.y * defocus_dv
                     };
                     let ray_origin = camera.position + ray_origin_offset;
