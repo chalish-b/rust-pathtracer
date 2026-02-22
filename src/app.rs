@@ -16,8 +16,8 @@ const W: usize = 800;
 const H: usize = 600;
 const PREVIEW_SCALE: usize = 2; // Render at lower resolution during edits
 const PREVIEW_SETTLE_MS: u128 = 300; // ms of no edits before switching to full res
-const RECURSION_DEPTH: i32 = 12;
-const THREAD_COUNT: usize = 12;
+const RECURSION_DEPTH: i32 = 16;
+const THREAD_COUNT: usize = 4;
 
 // ---------------------------------------------------------------------------
 // Editable scene description (UI-friendly types)
@@ -36,6 +36,10 @@ enum MaterialParams {
         albedo: [f32; 3],
         refraction_index: f32,
     },
+    Emissive {
+        albedo: [f32; 3],
+        power: f32,
+    },
 }
 
 impl MaterialParams {
@@ -44,6 +48,7 @@ impl MaterialParams {
             MaterialParams::Lambertian { .. } => "Lambertian",
             MaterialParams::Metal { .. } => "Metal",
             MaterialParams::Glass { .. } => "Glass",
+            MaterialParams::Emissive { .. } => "Emissive",
         }
     }
 
@@ -52,6 +57,7 @@ impl MaterialParams {
             MaterialParams::Lambertian { albedo } => albedo,
             MaterialParams::Metal { albedo, .. } => albedo,
             MaterialParams::Glass { albedo, .. } => albedo,
+            MaterialParams::Emissive { albedo, .. } => albedo,
         }
     }
 
@@ -70,6 +76,10 @@ impl MaterialParams {
             } => Material::Glass {
                 albedo: Color::new(albedo[0], albedo[1], albedo[2]),
                 refraction_index: *refraction_index,
+            },
+            MaterialParams::Emissive { albedo, power } => Material::Emissive {
+                albedo: Color::new(albedo[0], albedo[1], albedo[2]),
+                power: *power,
             },
         }
     }
@@ -264,12 +274,18 @@ impl PathTracerApp {
         }
     }
 
-    /// Reset accumulation and respawn the render thread at the given resolution.
+    // Reset accumulation and respawn the render thread at the given resolution
     fn restart_render(&mut self, width: usize, height: usize) {
         let (scene, camera) = build_scene_from_params(&self.scene_params);
-        // Dropping the old receiver causes the old render thread's send() to fail → thread exits.
-        self.sample_receiver =
-            spawn_render_thread(scene, camera, width, height, self.scene_params.recursion_depth);
+        // Dropping the old receiver causes the old render thread's send() to fail
+        // thread exits.
+        self.sample_receiver = spawn_render_thread(
+            scene,
+            camera,
+            width,
+            height,
+            self.scene_params.recursion_depth,
+        );
         self.render_width = width;
         self.render_height = height;
         self.accum_buffer = vec![Color::BLACK; width * height];
@@ -310,7 +326,7 @@ fn spawn_render_thread(
 // UI
 // ---------------------------------------------------------------------------
 
-const MATERIAL_TYPES: [&str; 3] = ["Lambertian", "Metal", "Glass"];
+const MATERIAL_TYPES: [&str; 4] = ["Lambertian", "Metal", "Glass", "Emissive"];
 
 impl eframe::App for PathTracerApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
@@ -574,6 +590,7 @@ impl eframe::App for PathTracerApp {
                                         albedo,
                                         refraction_index: 1.5,
                                     },
+                                    "Emissive" => MaterialParams::Emissive { albedo, power: 1.0 },
                                     _ => unreachable!(),
                                 };
                                 dirty = true;
@@ -607,6 +624,14 @@ impl eframe::App for PathTracerApp {
                                             ui.label("IOR:");
                                             ui.add(egui::Slider::new(refraction_index, 0.1..=3.0))
                                                 .changed()
+                                        })
+                                        .inner;
+                                }
+                                MaterialParams::Emissive { power, .. } => {
+                                    dirty |= ui
+                                        .horizontal(|ui| {
+                                            ui.label("Power:");
+                                            ui.add(egui::Slider::new(power, 0.0..=3.0)).changed()
                                         })
                                         .inner;
                                 }

@@ -21,6 +21,10 @@ pub enum Material {
         albedo: Color,
         refraction_index: f32,
     },
+    Emissive {
+        albedo: Color,
+        power: f32,
+    },
 }
 
 impl Material {
@@ -76,7 +80,8 @@ impl Material {
 
                 let is_total_internal_reflection = ri * sin_theta > 1.0;
 
-                // TODO: Should the second argument here be the raw `refraction_index`, or `ri` (adjusted for back face)?
+                // TODO: Should the second argument here be the raw `refraction_index` // or
+                // `ri` (adjusted for back face)?
                 let should_have_reflectance =
                     reflectance(cos_theta, *refraction_index) > rng.random_range(0.0..=1.0);
 
@@ -94,6 +99,18 @@ impl Material {
                     attenuation: *albedo,
                 })
             }
+            // Emissive materials can technically scatter, but it's not
+            // noticable compared to the emission, so it's ok to ignore it.
+            Material::Emissive { .. } => None,
+        }
+    }
+
+    // Emission is independent of incoming ray, direction and point (I think),
+    // so this takes no params
+    pub fn emission(&self) -> Color {
+        match self {
+            Material::Emissive { albedo, power } => *albedo * *power,
+            _ => Color::BLACK,
         }
     }
 }

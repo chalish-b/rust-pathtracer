@@ -42,7 +42,8 @@ struct ViewportParams {
     pub defocus_dv: Vec3,
 }
 
-/// For rendering, we start with the top left center and keep adding du and dv for each pixel on canvas.
+// For rendering, we start with the top left center and keep adding du and dv
+// for each pixel on canvas.
 fn calculate_viewport_params(camera: &Camera, width: usize, height: usize) -> ViewportParams {
     let (right, up, forward) = camera.axes();
     let Vec2 { x: vw, y: vh } = camera.viewport_size();
@@ -58,7 +59,8 @@ fn calculate_viewport_params(camera: &Camera, width: usize, height: usize) -> Vi
     let defocus_du = right * defocus_r;
     let defocus_dv = up * defocus_r;
 
-    // Here, we're actually using viewport distance to be focus distance, because that's basically where we wanna shoot the rays at
+    // Here, we're actually using viewport distance to be focus distance, because
+    // that's basically where we wanna shoot the rays at
     let viewport_center = camera.position + camera.focus_distance * forward;
     let viewport_top_left = viewport_center - (viewport_u + viewport_v) / 2.0;
     let top_left_px_center = viewport_top_left + (du + dv) / 2.0;
@@ -148,9 +150,9 @@ pub fn render(scene: &Scene, camera: &Camera, canvas: &mut Canvas, options: Rend
         });
 }
 
-/// Renders exactly 1 sample per pixel and returns raw linear colors (no gamma correction).
-/// Used for progressive rendering: call this repeatedly, accumulate the results, then
-/// average and gamma-correct for display.
+// Renders exactly 1 sample per pixel and returns raw linear colors (no gamma
+// correction). Used for progressive rendering: call this repeatedly,
+// accumulate the results, then average and gamma-correct for display.
 pub fn render_single_sample(
     scene: &Scene,
     camera: &Camera,
@@ -211,18 +213,28 @@ fn shoot_ray(scene: &Scene, ray: Ray, recursion_depth: i32) -> Color {
 
     let hit_record = find_hit(scene, ray, Interval(BOUNCE_EPSILON, f32::INFINITY));
     if let Some(hit_rec) = hit_record {
+        let emission_color = hit_rec.material.emission();
+
+        // If material scatters
         if let Some(scatter_result) = hit_rec.material.scatter(ray, hit_rec) {
             let ray_color = shoot_ray(scene, scatter_result.out_ray, recursion_depth - 1);
-            return scatter_result.attenuation * ray_color;
+            let scatter_color = scatter_result.attenuation * ray_color;
+            return emission_color + scatter_color;
         }
 
-        return Color::BLACK;
+        // If material doesn't scatter, just return emission color (which is black for
+        // non-emissive materials so it all works out)
+        return emission_color;
     }
 
+    // If we don't hit anything, return skybox / ambient color
     skybox_color(ray)
 }
 
 fn skybox_color(ray: Ray) -> Color {
+    // Disable skylight to test emissive materials
+    return Color::BLACK;
+
     const BLUE_SKY: Color = Color::new(0.4, 0.58, 0.92);
     const WHITE_HORIZON: Color = Color::new(0.95, 0.95, 0.98);
 
