@@ -1,7 +1,9 @@
 use eframe::egui;
 use glam::Vec3;
+use std::io::{BufWriter, Write};
 use std::sync::mpsc;
 use std::time::Instant;
+use std::{fs, path, thread};
 
 use crate::{
     camera::Camera,
@@ -274,6 +276,40 @@ impl PathTracerApp {
         }
     }
 
+    fn save_current_image(&self) {
+        if self.sample_count == 0 {
+            return;
+        }
+
+        let mut n = 1u32;
+        let filename = loop {
+            let name = format!("render_{:03}.ppm", n);
+            if !path::Path::new(&name).exists() {
+                break name;
+            }
+            n += 1;
+        };
+
+        let inv_count = 1.0 / self.sample_count as f32;
+        let file = fs::File::create(&filename).expect("Failed to create file");
+        let mut w = BufWriter::new(file);
+        writeln!(w, "P3").unwrap();
+        writeln!(w, "{} {}", self.render_width, self.render_height).unwrap();
+        writeln!(w, "255").unwrap();
+        for c in &self.accum_buffer {
+            let gc = (*c * inv_count).to_gamma();
+            let r = (gc.r * 255.0).clamp(0.0, 255.0) as u8;
+            let g = (gc.g * 255.0).clamp(0.0, 255.0) as u8;
+            let b = (gc.b * 255.0).clamp(0.0, 255.0) as u8;
+            writeln!(w, "{r} {g} {b}").unwrap();
+        }
+
+        println!(
+            "Saved {} ({}x{}, {} samples)",
+            filename, self.render_width, self.render_height, self.sample_count
+        );
+    }
+
     // Reset accumulation and respawn the render thread at the given resolution
     fn restart_render(&mut self, width: usize, height: usize) {
         let (scene, camera) = build_scene_from_params(&self.scene_params);
@@ -309,7 +345,7 @@ fn spawn_render_thread(
         thread_count: THREAD_COUNT,
     };
 
-    std::thread::spawn(move || {
+    thread::spawn(move || {
         loop {
             let sample =
                 renderer::render_single_sample(&scene, &camera, width, height, &render_options);
@@ -391,9 +427,14 @@ impl eframe::App for PathTracerApp {
                         self.sample_count, sps
                     ));
 
-                    if ui.button("Reset render").clicked() {
-                        dirty = true;
-                    }
+                    ui.horizontal(|ui| {
+                        if ui.button("Reset render").clicked() {
+                            dirty = true;
+                        }
+                        if ui.button("Save image").clicked() {
+                            self.save_current_image();
+                        }
+                    });
 
                     dirty |= ui
                         .horizontal(|ui| {
