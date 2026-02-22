@@ -43,11 +43,11 @@ struct ViewportParams {
 }
 
 /// For rendering, we start with the top left center and keep adding du and dv for each pixel on canvas.
-fn calculate_viewport_params(camera: &Camera, canvas: &Canvas) -> ViewportParams {
+fn calculate_viewport_params(camera: &Camera, width: usize, height: usize) -> ViewportParams {
     let (right, up, forward) = camera.axes();
     let Vec2 { x: vw, y: vh } = camera.viewport_size();
-    let cw = canvas.w as f32;
-    let ch = canvas.h as f32;
+    let cw = width as f32;
+    let ch = height as f32;
 
     let viewport_u = right * vw;
     let viewport_v = -up * vh;
@@ -79,7 +79,7 @@ pub fn render(scene: &Scene, camera: &Camera, canvas: &mut Canvas, options: Rend
         dv,
         defocus_du,
         defocus_dv,
-    } = calculate_viewport_params(camera, canvas);
+    } = calculate_viewport_params(camera, canvas.w, canvas.h);
 
     // Set the number of threads of the thread pool
     // Calling build_global multiple times would give an error,
@@ -146,6 +146,62 @@ pub fn render(scene: &Scene, camera: &Camera, canvas: &mut Canvas, options: Rend
                 println!("{current_p}%");
             }
         });
+}
+
+/// Renders exactly 1 sample per pixel and returns raw linear colors (no gamma correction).
+/// Used for progressive rendering: call this repeatedly, accumulate the results, then
+/// average and gamma-correct for display.
+pub fn render_single_sample(
+    scene: &Scene,
+    camera: &Camera,
+    width: usize,
+    height: usize,
+    options: &RenderOptions,
+) -> Vec<Color> {
+    let ViewportParams {
+        top_left_px_center,
+        du,
+        dv,
+        defocus_du,
+        defocus_dv,
+    } = calculate_viewport_params(camera, width, height);
+
+    let mut pixels = vec![Color::BLACK; width * height];
+
+    pixels
+        .par_chunks_mut(width)
+        .enumerate()
+        .for_each(|(y, row)| {
+            #[allow(clippy::needless_range_loop)]
+            for x in 0..width {
+                let offset = if options.antialiasing {
+                    random_in_square()
+                } else {
+                    Vec3::ZERO
+                };
+
+                let pixel_center = top_left_px_center
+                    + (((x as f32) + offset.x) * du)
+                    + (((y as f32) + offset.y) * dv);
+
+                let ray_origin_offset = if camera.defocus_angle <= 0.0 {
+                    Vec3::ZERO
+                } else {
+                    let random = random_in_disk();
+                    random.x * defocus_du + random.y * defocus_dv
+                };
+                let ray_origin = camera.position + ray_origin_offset;
+                let ray_dir = pixel_center - ray_origin;
+                let ray = Ray {
+                    origin: ray_origin,
+                    direction: ray_dir,
+                };
+
+                row[x] = shoot_ray(scene, ray, options.recursion_depth);
+            }
+        });
+
+    pixels
 }
 
 fn shoot_ray(scene: &Scene, ray: Ray, recursion_depth: i32) -> Color {

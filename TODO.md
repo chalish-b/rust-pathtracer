@@ -1,0 +1,4 @@
+- Fly around camera with WASD and mouse
+- Emissive material type
+  - Overall, I want to refactor the materials to be a single type (PBR) with all parameters at once like rougness, metallic, emission etc.
+- Responsive image size that fills the canvas

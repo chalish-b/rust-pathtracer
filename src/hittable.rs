@@ -10,7 +10,7 @@ pub struct HitRecord {
     pub material: Material,
 }
 
-pub trait Hit: Sync {
+pub trait Hit: Send + Sync {
     /// Checks whether a ray hits this object, returns the hit record if it does
     fn hit(&self, ray: Ray, interval: Interval) -> Option<HitRecord>;
 }

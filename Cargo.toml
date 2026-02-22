@@ -4,18 +4,19 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+eframe = "0.33.3"
 glam = "0.32.0"
 rand = "0.10.0"
 rayon = "1.11.0"
 
 [profile.dev]
-# Huge difference between opt-level 0 and 1 (15 second vs 2 seconds)
-# Nice for development, disable if debugging becomes hard
+# Huge difference between opt-level 0 and 1 (15 second vs 2 seconds for a full frame at 64 samples)
+# The app is unusable real-time without this
 opt-level = 1
 
 [profile.release]
-
 # Opt level 2 seems to be consistently more performant than 3
+# Tested at 800x600 and 64 samples
 # opt-level 1 and 2: ~1.8-1.9 seconds
 # opt-level 3: ~2.4-2.5 seconds
 opt-level = 2
