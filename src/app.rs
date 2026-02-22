@@ -194,12 +194,12 @@ fn default_scene_params() -> SceneParams {
                 },
             },
             SphereParams {
-                name: "Glass small".into(),
+                name: "Light source".into(),
                 center: [0.45, 0.5, -3.8],
                 radius: 0.35,
-                material: MaterialParams::Glass {
+                material: MaterialParams::Emissive {
                     albedo: [1.0, 1.0, 1.0],
-                    refraction_index: 1.01,
+                    power: 2.0,
                 },
             },
             SphereParams {
@@ -375,7 +375,7 @@ impl eframe::App for PathTracerApp {
         // ----- Side panel with controls -----
         let mut dirty = false;
 
-        egui::SidePanel::left("controls")
+        egui::SidePanel::right("controls")
             .default_width(260.0)
             .show(ctx, |ui| {
                 egui::ScrollArea::vertical().show(ui, |ui| {
@@ -505,23 +505,15 @@ impl eframe::App for PathTracerApp {
                     let mut delete_idx: Option<usize> = None;
 
                     for (i, sphere) in self.scene_params.spheres.iter_mut().enumerate() {
-                        let id = ui.make_persistent_id(format!("sphere_{i}"));
-                        egui::collapsing_header::CollapsingState::load_with_default_open(
-                            ui.ctx(),
-                            id,
-                            false,
-                        )
-                        .show_header(ui, |ui| {
-                            ui.label(&sphere.name);
-                        })
-                        .body(|ui| {
-                            // Name
-                            dirty |= ui
-                                .horizontal(|ui| {
-                                    ui.label("Name:");
-                                    ui.text_edit_singleline(&mut sphere.name).changed()
-                                })
-                                .inner;
+                        egui::CollapsingHeader::new(&sphere.name)
+                            .id_salt(format!("sphere_{i}"))
+                            .default_open(false)
+                            .show(ui, |ui| {
+                            // Name (cosmetic only — no re-render needed)
+                            ui.horizontal(|ui| {
+                                ui.label("Name:");
+                                ui.text_edit_singleline(&mut sphere.name);
+                            });
 
                             // Position
                             ui.label("Position:");
