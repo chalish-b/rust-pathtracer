@@ -236,7 +236,7 @@ fn skybox_color(ray: Ray) -> Color {
     // 0: no skylight
     // 1: very small amount
     // 2: blue gradient
-    match 1 {
+    match 0 {
         0 => Color::BLACK,
         1 => Color::new(0.01, 0.01, 0.02),
         2 => {

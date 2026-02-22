@@ -17,7 +17,7 @@ const H: usize = 600;
 const PREVIEW_SCALE: usize = 2; // Render at lower resolution during edits
 const PREVIEW_SETTLE_MS: u128 = 300; // ms of no edits before switching to full res
 const RECURSION_DEPTH: i32 = 16;
-const THREAD_COUNT: usize = 4;
+const THREAD_COUNT: usize = 10;
 
 // ---------------------------------------------------------------------------
 // Editable scene description (UI-friendly types)
@@ -509,133 +509,142 @@ impl eframe::App for PathTracerApp {
                             .id_salt(format!("sphere_{i}"))
                             .default_open(false)
                             .show(ui, |ui| {
-                            // Name (cosmetic only — no re-render needed)
-                            ui.horizontal(|ui| {
-                                ui.label("Name:");
-                                ui.text_edit_singleline(&mut sphere.name);
-                            });
+                                // Name (cosmetic only — no re-render needed)
+                                ui.horizontal(|ui| {
+                                    ui.label("Name:");
+                                    ui.text_edit_singleline(&mut sphere.name);
+                                });
 
-                            // Position
-                            ui.label("Position:");
-                            ui.horizontal(|ui| {
-                                dirty |= ui
-                                    .add(
-                                        egui::DragValue::new(&mut sphere.center[0])
-                                            .prefix("x: ")
-                                            .speed(0.05),
-                                    )
-                                    .changed();
-                                dirty |= ui
-                                    .add(
-                                        egui::DragValue::new(&mut sphere.center[1])
-                                            .prefix("y: ")
-                                            .speed(0.05),
-                                    )
-                                    .changed();
-                                dirty |= ui
-                                    .add(
-                                        egui::DragValue::new(&mut sphere.center[2])
-                                            .prefix("z: ")
-                                            .speed(0.05),
-                                    )
-                                    .changed();
-                            });
-
-                            // Radius
-                            dirty |= ui
-                                .horizontal(|ui| {
-                                    ui.label("Radius:");
-                                    ui.add(
-                                        egui::DragValue::new(&mut sphere.radius)
-                                            .speed(0.02)
-                                            .range(0.01..=1000.0),
-                                    )
-                                    .changed()
-                                })
-                                .inner;
-
-                            // Material type selector
-                            let current_label = sphere.material.label();
-                            let mut selected = MATERIAL_TYPES
-                                .iter()
-                                .position(|&t| t == current_label)
-                                .unwrap_or(0);
-                            let mat_changed = ui
-                                .horizontal(|ui| {
-                                    ui.label("Material:");
-                                    egui::ComboBox::from_id_salt(format!("mat_{i}"))
-                                        .selected_text(MATERIAL_TYPES[selected])
-                                        .show_index(ui, &mut selected, MATERIAL_TYPES.len(), |i| {
-                                            MATERIAL_TYPES[i].to_string()
-                                        })
-                                        .changed()
-                                })
-                                .inner;
-
-                            if mat_changed {
-                                // Preserve albedo when switching material type
-                                let albedo = *sphere.material.albedo_mut();
-                                sphere.material = match MATERIAL_TYPES[selected] {
-                                    "Lambertian" => MaterialParams::Lambertian { albedo },
-                                    "Metal" => MaterialParams::Metal { albedo, fuzz: 0.1 },
-                                    "Glass" => MaterialParams::Glass {
-                                        albedo,
-                                        refraction_index: 1.5,
-                                    },
-                                    "Emissive" => MaterialParams::Emissive { albedo, power: 1.0 },
-                                    _ => unreachable!(),
-                                };
-                                dirty = true;
-                            }
-
-                            // Albedo color picker
-                            dirty |= ui
-                                .horizontal(|ui| {
-                                    ui.label("Color:");
-                                    ui.color_edit_button_rgb(sphere.material.albedo_mut())
-                                        .changed()
-                                })
-                                .inner;
-
-                            // Material-specific params
-                            match &mut sphere.material {
-                                MaterialParams::Lambertian { .. } => {}
-                                MaterialParams::Metal { fuzz, .. } => {
+                                // Position
+                                ui.label("Position:");
+                                ui.horizontal(|ui| {
                                     dirty |= ui
-                                        .horizontal(|ui| {
-                                            ui.label("Fuzz:");
-                                            ui.add(egui::Slider::new(fuzz, 0.0..=1.0)).changed()
-                                        })
-                                        .inner;
+                                        .add(
+                                            egui::DragValue::new(&mut sphere.center[0])
+                                                .prefix("x: ")
+                                                .speed(0.05),
+                                        )
+                                        .changed();
+                                    dirty |= ui
+                                        .add(
+                                            egui::DragValue::new(&mut sphere.center[1])
+                                                .prefix("y: ")
+                                                .speed(0.05),
+                                        )
+                                        .changed();
+                                    dirty |= ui
+                                        .add(
+                                            egui::DragValue::new(&mut sphere.center[2])
+                                                .prefix("z: ")
+                                                .speed(0.05),
+                                        )
+                                        .changed();
+                                });
+
+                                // Radius
+                                dirty |= ui
+                                    .horizontal(|ui| {
+                                        ui.label("Radius:");
+                                        ui.add(
+                                            egui::DragValue::new(&mut sphere.radius)
+                                                .speed(0.02)
+                                                .range(0.01..=1000.0),
+                                        )
+                                        .changed()
+                                    })
+                                    .inner;
+
+                                // Material type selector
+                                let current_label = sphere.material.label();
+                                let mut selected = MATERIAL_TYPES
+                                    .iter()
+                                    .position(|&t| t == current_label)
+                                    .unwrap_or(0);
+                                let mat_changed = ui
+                                    .horizontal(|ui| {
+                                        ui.label("Material:");
+                                        egui::ComboBox::from_id_salt(format!("mat_{i}"))
+                                            .selected_text(MATERIAL_TYPES[selected])
+                                            .show_index(
+                                                ui,
+                                                &mut selected,
+                                                MATERIAL_TYPES.len(),
+                                                |i| MATERIAL_TYPES[i].to_string(),
+                                            )
+                                            .changed()
+                                    })
+                                    .inner;
+
+                                if mat_changed {
+                                    // Preserve albedo when switching material type
+                                    let albedo = *sphere.material.albedo_mut();
+                                    sphere.material = match MATERIAL_TYPES[selected] {
+                                        "Lambertian" => MaterialParams::Lambertian { albedo },
+                                        "Metal" => MaterialParams::Metal { albedo, fuzz: 0.1 },
+                                        "Glass" => MaterialParams::Glass {
+                                            albedo,
+                                            refraction_index: 1.5,
+                                        },
+                                        "Emissive" => {
+                                            MaterialParams::Emissive { albedo, power: 1.0 }
+                                        }
+                                        _ => unreachable!(),
+                                    };
+                                    dirty = true;
                                 }
-                                MaterialParams::Glass {
-                                    refraction_index, ..
-                                } => {
-                                    dirty |= ui
-                                        .horizontal(|ui| {
-                                            ui.label("IOR:");
-                                            ui.add(egui::Slider::new(refraction_index, 0.1..=3.0))
+
+                                // Albedo color picker
+                                dirty |= ui
+                                    .horizontal(|ui| {
+                                        ui.label("Color:");
+                                        ui.color_edit_button_rgb(sphere.material.albedo_mut())
+                                            .changed()
+                                    })
+                                    .inner;
+
+                                // Material-specific params
+                                match &mut sphere.material {
+                                    MaterialParams::Lambertian { .. } => {}
+                                    MaterialParams::Metal { fuzz, .. } => {
+                                        dirty |= ui
+                                            .horizontal(|ui| {
+                                                ui.label("Fuzz:");
+                                                ui.add(egui::Slider::new(fuzz, 0.0..=1.0)).changed()
+                                            })
+                                            .inner;
+                                    }
+                                    MaterialParams::Glass {
+                                        refraction_index, ..
+                                    } => {
+                                        dirty |= ui
+                                            .horizontal(|ui| {
+                                                ui.label("IOR:");
+                                                ui.add(egui::Slider::new(
+                                                    refraction_index,
+                                                    0.1..=3.0,
+                                                ))
                                                 .changed()
-                                        })
-                                        .inner;
+                                            })
+                                            .inner;
+                                    }
+                                    MaterialParams::Emissive { power, .. } => {
+                                        dirty |= ui
+                                            .horizontal(|ui| {
+                                                ui.label("Power:");
+                                                ui.add(egui::Slider::new(power, 0.0..=3.0))
+                                                    .changed()
+                                            })
+                                            .inner;
+                                    }
                                 }
-                                MaterialParams::Emissive { power, .. } => {
-                                    dirty |= ui
-                                        .horizontal(|ui| {
-                                            ui.label("Power:");
-                                            ui.add(egui::Slider::new(power, 0.0..=3.0)).changed()
-                                        })
-                                        .inner;
+
+                                // Delete button
+                                if ui.button("Delete").clicked() {
+                                    delete_idx = Some(i);
                                 }
-                            }
 
-                            // Delete button
-                            if ui.button("Delete").clicked() {
-                                delete_idx = Some(i);
-                            }
-
-                            ui.add_space(4.0);
-                        });
+                                ui.add_space(4.0);
+                            });
                     }
 
                     if let Some(idx) = delete_idx {
