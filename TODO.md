@@ -1,4 +1,0 @@
-- Make the skybox settings also configurable in the sidebar
-- Fly around camera with WASD and mouse
-- Responsive image size that fills the canvas
-- Refactor the materials to be a single type (PBR) with all parameters at once like rougness, metallic, emission etc.

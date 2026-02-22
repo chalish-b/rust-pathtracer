@@ -4,8 +4,18 @@ A learning project to implement the Ray Tracing book in Rust.
 
 ![](./output_highres.png)
 
-I've [already done this](https://github.com/chalish-b/raytracer-book-csharp) in C# on my first time reading the book. This is a Rust port of the exact same project because I wanted to learn Rust.
+![](./output2_highres.png)
 
-Followed the [Ray Tracing in One Weekend](https://raytracing.github.io/books/RayTracingInOneWeekend.html) (first book) and implemented it in a few days. Since I already made this project in another language before, I was able to focus on just learning Rust, which made things easier.
+Followed the [Ray Tracing in One Weekend](https://raytracing.github.io/books/RayTracingInOneWeekend.html) (first book) and implemented it in a few days. I've done some of the things in C# on my first time reading the book. But then I ported it to Rust and fully finished the first book.
 
-The interactive part and UI (egui) is the only part I got AI help, because the focus of the project wasn't really to learn egui. It's a good addition so that I could explore raytracing in a more interactive way.
+I wrote all the ray tracing code myself, but I had Claude help me with the interactive stuff and UI (egui). The focus of the project was to understand ray tracing concepts and try out Rust. The UI is just a way to explore things in a more interactive way.
+
+### TODO
+
+Excluding the stuff from the next 2 books:
+
+- Make the skybox settings also configurable in the sidebar
+- Fly around camera with WASD and mouse
+- Responsive image size that fills the canvas
+- Refactor the materials to be a single type (PBR) with all parameters at once like rougness, metallic, emission etc.
+- GPU rendering with shaders (wgpu?)

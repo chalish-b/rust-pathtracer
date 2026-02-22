@@ -138,96 +138,123 @@ fn default_scene_params() -> SceneParams {
     SceneParams {
         recursion_depth: RECURSION_DEPTH,
         camera: CameraParams {
-            position: [0.0, 0.0, 0.0],
-            look_at: [0.0, 1.0, -7.0],
-            v_fov_deg: 65.0,
-            focus_distance: 6.0,
-            defocus_angle: 0.0,
+            position: [6.0, 2.2, 5.0],
+            look_at: [0.0, 0.7, -2.8],
+            v_fov_deg: 34.0,
+            focus_distance: 9.5,
+            defocus_angle: 0.35,
         },
         spheres: vec![
             SphereParams {
-                name: "Red sphere".into(),
-                center: [0.0, 0.0, -7.0],
-                radius: 1.0,
-                material: MaterialParams::Lambertian {
-                    albedo: [0.98, 0.10, 0.12],
-                },
-            },
-            SphereParams {
-                name: "Yellow sphere".into(),
-                center: [1.6, -0.4, -6.5],
-                radius: 0.6,
-                material: MaterialParams::Lambertian {
-                    albedo: [0.92, 0.94, 0.21],
-                },
-            },
-            SphereParams {
-                name: "Green sphere".into(),
-                center: [1.2, 2.0, -2.0],
-                radius: 1.2,
-                material: MaterialParams::Lambertian {
-                    albedo: [0.32, 0.94, 0.30],
-                },
-            },
-            SphereParams {
-                name: "Black sphere".into(),
-                center: [-2.0, 5.0, -15.0],
-                radius: 2.0,
-                material: MaterialParams::Lambertian {
-                    albedo: [0.07, 0.07, 0.07],
-                },
-            },
-            SphereParams {
-                name: "Blue metal".into(),
-                center: [-3.0, 0.98, -10.0],
-                radius: 2.0,
-                material: MaterialParams::Metal {
-                    albedo: [0.12, 0.10, 0.92],
-                    fuzz: 0.1,
-                },
-            },
-            SphereParams {
-                name: "Glass outer".into(),
-                center: [-0.3, 0.4, -3.2],
-                radius: 0.5,
-                material: MaterialParams::Glass {
-                    albedo: [1.0, 1.0, 1.0],
-                    refraction_index: 1.025,
-                },
-            },
-            SphereParams {
-                name: "Light source".into(),
-                center: [0.45, 0.5, -3.8],
-                radius: 0.35,
-                material: MaterialParams::Emissive {
-                    albedo: [1.0, 1.0, 1.0],
-                    power: 2.0,
-                },
-            },
-            SphereParams {
-                name: "Glass inner (air)".into(),
-                center: [-0.3, 0.4, -3.2],
-                radius: 0.45,
-                material: MaterialParams::Glass {
-                    albedo: [1.0, 1.0, 1.0],
-                    refraction_index: 1.0 / 1.025,
-                },
-            },
-            SphereParams {
-                name: "White mirror".into(),
-                center: [4.0, 1.95, -12.0],
-                radius: 3.0,
-                material: MaterialParams::Metal {
-                    albedo: [0.9, 0.9, 0.9],
-                    fuzz: 0.01,
-                },
-            },
-            SphereParams {
                 name: "Ground".into(),
-                center: [0.0, -501.0, -7.0],
-                radius: 500.0,
+                center: [0.0, -1000.0, 0.0],
+                radius: 1000.0,
                 material: MaterialParams::Lambertian {
-                    albedo: [0.98, 0.92, 0.88],
+                    albedo: [0.26, 0.24, 0.22],
+                },
+            },
+            SphereParams {
+                name: "Backdrop".into(),
+                center: [0.0, 52.0, -130.0],
+                radius: 50.0,
+                material: MaterialParams::Lambertian {
+                    albedo: [0.18, 0.22, 0.29],
+                },
+            },
+            SphereParams {
+                name: "Center glass shell".into(),
+                center: [0.0, 1.05, -2.9],
+                radius: 1.05,
+                material: MaterialParams::Glass {
+                    albedo: [1.0, 1.0, 1.0],
+                    refraction_index: 1.5,
+                },
+            },
+            SphereParams {
+                name: "Center air bubble".into(),
+                center: [0.0, 1.05, -2.9],
+                radius: 0.9,
+                material: MaterialParams::Glass {
+                    albedo: [1.0, 1.0, 1.0],
+                    refraction_index: 1.0 / 1.5,
+                },
+            },
+            SphereParams {
+                name: "Left brushed metal".into(),
+                center: [-2.35, 0.8, -3.6],
+                radius: 0.8,
+                material: MaterialParams::Metal {
+                    albedo: [0.72, 0.78, 0.86],
+                    fuzz: 0.22,
+                },
+            },
+            SphereParams {
+                name: "Right polished copper".into(),
+                center: [2.15, 0.9, -3.5],
+                radius: 0.9,
+                material: MaterialParams::Metal {
+                    albedo: [0.92, 0.62, 0.38],
+                    fuzz: 0.03,
+                },
+            },
+            SphereParams {
+                name: "Rear red matte".into(),
+                center: [-0.8, 0.65, -5.25],
+                radius: 0.65,
+                material: MaterialParams::Lambertian {
+                    albedo: [0.88, 0.18, 0.17],
+                },
+            },
+            SphereParams {
+                name: "Rear teal matte".into(),
+                center: [1.0, 0.55, -5.05],
+                radius: 0.55,
+                material: MaterialParams::Lambertian {
+                    albedo: [0.16, 0.70, 0.63],
+                },
+            },
+            SphereParams {
+                name: "Warm key light".into(),
+                center: [-2.2, 4.6, -2.4],
+                radius: 0.65,
+                material: MaterialParams::Emissive {
+                    albedo: [1.0, 0.92, 0.82],
+                    power: 5.0,
+                },
+            },
+            SphereParams {
+                name: "Cool rim light".into(),
+                center: [3.2, 3.2, -5.6],
+                radius: 0.52,
+                material: MaterialParams::Emissive {
+                    albedo: [0.72, 0.84, 1.0],
+                    power: 3.6,
+                },
+            },
+            SphereParams {
+                name: "Tiny accent light".into(),
+                center: [0.2, 2.3, -1.7],
+                radius: 0.16,
+                material: MaterialParams::Emissive {
+                    albedo: [1.0, 0.72, 0.34],
+                    power: 14.0,
+                },
+            },
+            SphereParams {
+                name: "Foreground pearl".into(),
+                center: [-1.05, 0.35, -1.5],
+                radius: 0.35,
+                material: MaterialParams::Metal {
+                    albedo: [0.88, 0.86, 0.82],
+                    fuzz: 0.08,
+                },
+            },
+            SphereParams {
+                name: "Foreground violet matte".into(),
+                center: [1.05, 0.28, -1.25],
+                radius: 0.28,
+                material: MaterialParams::Lambertian {
+                    albedo: [0.45, 0.24, 0.62],
                 },
             },
         ],
