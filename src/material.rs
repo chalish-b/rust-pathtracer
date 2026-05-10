@@ -8,6 +8,10 @@ pub struct ScatterResult {
     pub attenuation: Color,
 }
 
+pub const DEFAULT_MAT: Material = Material::Lambertian {
+    albedo: Color::WHITE,
+};
+
 #[derive(Debug, Copy, Clone)]
 pub enum Material {
     Lambertian {

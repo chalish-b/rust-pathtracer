@@ -8,10 +8,11 @@ use std::{fs, path, thread};
 use crate::{
     camera::Camera,
     color::Color,
-    hittable::Sphere,
     material::Material,
+    quad::Quad,
     renderer::{self, RenderOptions},
-    scene::Scene,
+    scene::{Scene, Skybox},
+    sphere::Sphere,
 };
 
 const W: usize = 800;
@@ -109,6 +110,7 @@ struct SceneParams {
     spheres: Vec<SphereParams>,
     camera: CameraParams,
     recursion_depth: i32,
+    skybox: Skybox,
 }
 
 // ---------------------------------------------------------------------------
@@ -126,10 +128,62 @@ fn build_scene_from_params(params: &SceneParams) -> (Scene, Camera) {
     camera.defocus_angle = cp.defocus_angle;
 
     let mut scene = Scene::new();
+    scene.skybox = params.skybox;
     for sp in &params.spheres {
         let center = Vec3::new(sp.center[0], sp.center[1], sp.center[2]);
         scene.add_hittable(Sphere::new(center, sp.radius).with_material(sp.material.to_material()));
     }
+
+    // Static test quads
+    // Tall lambertian quad on the left, like a back-left wall
+    scene.add_hittable(
+        Quad::new(
+            Vec3::new(-3.5, 0.0, -2.0),
+            Vec3::new(0.0, 0.0, -0.1),
+            Vec3::new(0.0, 0.1, 0.0),
+        )
+        .with_material(Material::Lambertian {
+            albedo: Color::new(0.55, 0.25, 0.65),
+        }),
+    );
+
+    // Metal quad on the right, tilted slightly — acts like a mirror panel
+    scene.add_hittable(
+        Quad::new(
+            Vec3::new(3.4, 0.0, -1.8),
+            Vec3::new(-0.4, 0.0, -3.6),
+            Vec3::new(0.0, 2.6, 0.0),
+        )
+        .with_material(Material::Metal {
+            albedo: Color::new(0.85, 0.85, 0.9),
+            fuzz: 0.05,
+        }),
+    );
+
+    // Emissive ceiling panel above the spheres
+    scene.add_hittable(
+        Quad::new(
+            Vec3::new(-1.5, 4.2, -4.0),
+            Vec3::new(3.0, 0.0, 0.0),
+            Vec3::new(0.0, 0.0, 1.8),
+        )
+        .with_material(Material::Emissive {
+            albedo: Color::new(1.0, 0.95, 0.85),
+            power: 2.0,
+        }),
+    );
+
+    // Small lambertian quad on the floor in front, like a tile
+    scene.add_hittable(
+        Quad::new(
+            Vec3::new(-0.5, 0.01, -0.5),
+            Vec3::new(1.2, 0.0, 0.0),
+            Vec3::new(0.0, 0.0, -1.2),
+        )
+        .with_material(Material::Lambertian {
+            albedo: Color::new(0.18, 0.65, 0.35),
+        }),
+    );
 
     (scene, camera)
 }
@@ -137,6 +191,7 @@ fn build_scene_from_params(params: &SceneParams) -> (Scene, Camera) {
 fn default_scene_params() -> SceneParams {
     SceneParams {
         recursion_depth: RECURSION_DEPTH,
+        skybox: Skybox::None,
         camera: CameraParams {
             position: [6.0, 2.2, 5.0],
             look_at: [0.0, 0.7, -2.8],
@@ -310,7 +365,7 @@ impl PathTracerApp {
 
         let mut n = 1u32;
         let filename = loop {
-            let name = format!("render_{:03}.ppm", n);
+            let name = format!("render_{n:03}.ppm");
             if !path::Path::new(&name).exists() {
                 break name;
             }
@@ -471,6 +526,23 @@ impl eframe::App for PathTracerApp {
                                 1..=50,
                             ))
                             .changed()
+                        })
+                        .inner;
+
+                    dirty |= ui
+                        .horizontal(|ui| {
+                            ui.label("Skybox:");
+                            let sky = &mut self.scene_params.skybox;
+                            let before = *sky;
+                            egui::ComboBox::from_id_salt("skybox")
+                                .selected_text(sky.label())
+                                .show_ui(ui, |ui| {
+                                    for option in [Skybox::None, Skybox::Dim, Skybox::BlueGradient]
+                                    {
+                                        ui.selectable_value(sky, option, option.label());
+                                    }
+                                });
+                            *sky != before
                         })
                         .inner;
 

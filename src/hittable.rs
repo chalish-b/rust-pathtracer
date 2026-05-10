@@ -4,68 +4,18 @@ use glam::Vec3;
 #[derive(Debug, Copy, Clone)]
 pub struct HitRecord {
     pub normal: Vec3,
-    pub point: Vec3,
+    pub ray: Ray,
     pub t: f32,
+    pub point: Vec3, // This one might be redundant since ray.origin + t * ray.direction = point
     pub is_front_face: bool,
     pub material: Material,
 }
 
-pub trait Hit: Send + Sync {
-    /// Checks whether a ray hits this object, returns the hit record if it does
-    fn hit(&self, ray: Ray, interval: Interval) -> Option<HitRecord>;
-}
-
-// Concrete types (sphere only for now)
-pub struct Sphere {
-    center: Vec3,
-    radius: f32,
-    material: Material,
-}
-
-const DEFAULT_MAT: Material = Material::Lambertian {
-    albedo: Color::WHITE,
-};
-
-impl Sphere {
-    pub fn new(center: Vec3, radius: f32) -> Self {
-        Self {
-            center,
-            radius,
-            material: DEFAULT_MAT,
-        }
-    }
-
-    pub fn with_material(mut self, mat: Material) -> Self {
-        self.material = mat;
-        self
-    }
-}
-
-impl Hit for Sphere {
-    fn hit(&self, ray: Ray, interval: Interval) -> Option<HitRecord> {
-        let oc = self.center - ray.origin;
-        let a = Vec3::dot(ray.direction, ray.direction);
-        let b = -2.0 * Vec3::dot(oc, ray.direction);
-        let c = Vec3::dot(oc, oc) - self.radius.powi(2);
-
-        let delta = b * b - 4.0 * a * c;
-        if delta < 0.0 {
-            return None;
-        }
-
-        let t1 = (-b - delta.sqrt()) / (2.0 * a);
-        let t2 = (-b + delta.sqrt()) / (2.0 * a);
-
-        let mut t = t1;
-        if !interval.contains(t) {
-            t = t2;
-            if !interval.contains(t) {
-                return None;
-            }
-        }
-
-        let point = ray.at(t);
-        let mut normal = (point - self.center) / self.radius;
+impl HitRecord {
+    // is_front_face will be automatically determined and the surface normal will be
+    // flipped accordingly. Don't do it manually, just pass the surface normal as is.
+    pub fn new(surface_normal: Vec3, ray: Ray, t: f32, material: Material) -> Self {
+        let mut normal = surface_normal;
         let mut is_front_face = true;
 
         if Vec3::dot(ray.direction, normal) > 0.0 {
@@ -73,12 +23,19 @@ impl Hit for Sphere {
             normal = -normal;
         }
 
-        Some(HitRecord {
-            t,
-            is_front_face,
+        Self {
             normal,
-            point,
-            material: self.material,
-        })
+            ray,
+            t,
+            point: ray.origin + t * ray.direction,
+            is_front_face,
+            material,
+        }
     }
+}
+
+// Hit trait that objects need to implement
+pub trait Hit: Send + Sync {
+    /// Checks whether a ray hits this object, returns the hit record if it does
+    fn hit(&self, ray: Ray, interval: Interval) -> Option<HitRecord>;
 }

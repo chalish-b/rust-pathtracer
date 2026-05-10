@@ -228,26 +228,7 @@ fn shoot_ray(scene: &Scene, ray: Ray, recursion_depth: i32) -> Color {
     }
 
     // If we don't hit anything, return skybox / ambient color
-    skybox_color(ray)
-}
-
-fn skybox_color(ray: Ray) -> Color {
-    // Easy way to toggle between different skylight configs
-    // 0: no skylight
-    // 1: very small amount
-    // 2: blue gradient
-    match 0 {
-        0 => Color::BLACK,
-        1 => Color::new(0.01, 0.01, 0.02),
-        2 => {
-            const BLUE_SKY: Color = Color::new(0.4, 0.58, 0.92);
-            const WHITE_HORIZON: Color = Color::new(0.95, 0.95, 0.98);
-            let norm = ray.direction.normalize();
-            let y = (norm.y + 1.0) / 2.0;
-            Color::mix(BLUE_SKY, WHITE_HORIZON, y)
-        }
-        _ => unreachable!(),
-    }
+    scene.skybox.color(ray)
 }
 
 fn find_hit(scene: &Scene, ray: Ray, interval: Interval) -> Option<HitRecord> {

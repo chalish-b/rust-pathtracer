@@ -5,9 +5,11 @@ mod color;
 mod hittable;
 mod interval;
 mod material;
+mod quad;
 mod ray;
 mod renderer;
 mod scene;
+mod sphere;
 mod vec_rand;
 
 use eframe::egui;
