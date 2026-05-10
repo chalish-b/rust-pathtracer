@@ -139,8 +139,8 @@ fn build_scene_from_params(params: &SceneParams) -> (Scene, Camera) {
     scene.add_hittable(
         Quad::new(
             Vec3::new(-3.5, 0.0, -2.0),
-            Vec3::new(0.0, 0.0, -0.1),
-            Vec3::new(0.0, 0.1, 0.0),
+            Vec3::new(0.0, 0.0, 20.0),
+            Vec3::new(0.0, 20.0, 0.0),
         )
         .with_material(Material::Lambertian {
             albedo: Color::new(0.55, 0.25, 0.65),

@@ -60,7 +60,10 @@ impl Hit for Quad {
         // After we know it hits the plane, check whether that point is in the quad
         let hit_point = ray.at(t);
         let p = hit_point - self.corner;
-        let w = n / n.dot(n);
+
+        // Using unnormalized n is important here instead of self.normal() which is a unit vector
+        let unnormalized_n = self.u.cross(self.v);
+        let w = unnormalized_n / unnormalized_n.dot(unnormalized_n);
         let alpha = w.dot(p.cross(self.v));
         let beta = w.dot(self.u.cross(p));
 
